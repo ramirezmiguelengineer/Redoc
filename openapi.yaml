@@ -1,0 +1,269 @@
+openapi: 3.0.3
+
+info:
+  title: Investigate API
+  version: "1.0"
+  description: |
+    Interactive documentation for the Investigate module API.
+
+    • Rate limit: 1 request per second  
+    • Max query length: 2000 characters  
+    • Authentication via apiToken (query parameter)
+
+servers:
+  - url: https://platform.ke-la.com/api/investigate/v1
+
+components:
+  securitySchemes:
+    ApiTokenAuth:
+      type: apiKey
+      in: query
+      name: apiToken
+
+security:
+  - ApiTokenAuth: []
+
+tags:
+  - name: Query API
+  - name: Saved Queries API
+  - name: User License API
+
+paths:
+
+  /counters:
+    post:
+      tags: [Query API]
+      summary: Data Counters
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema: { type: string }
+          example: ke-la.com
+        - name: entity
+          in: query
+          schema:
+            type: string
+            enum: [text, domains, emails, subnets, credit_cards]
+          example: domains
+      responses:
+        "200":
+          description: Counters per data type
+          content:
+            application/json:
+              example:
+                data:
+                  - name: hacking_discussions
+                    counter: 1058
+                  - name: instant_messaging
+                    counter: 38853
+        "429":
+          description: Rate limit exceeded
+
+  /search:
+    post:
+      tags: [Query API]
+      summary: Data Search
+      description: |
+        **Endpoint URL**
+
+        ```
+        POST https://platform.ke-la.com/api/investigate/v1/search?apiToken=YOUR_API_TOKEN
+        ```
+
+        This endpoint performs a full-text search across the selected index.
+
+        ### Example request
+
+        ```bash
+        curl -X POST \
+          "https://platform.ke-la.com/api/investigate/v1/search?apiToken=YOUR_API_TOKEN&query=test.com&entity=domains&index=compromised_accounts" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "filters": {
+              "sources": ["Genesis"]
+            }
+          }'
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema: { type: string }
+          example: ke-la.com
+        - name: entity
+          in: query
+          schema:
+            type: string
+            enum: [text, domains, emails, subnets, credit_cards]
+          example: domains
+        - name: index
+          in: query
+          required: true
+          schema:
+            type: string
+            enum:
+              - hacking_discussions
+              - leaked_credentials
+              - instant_messaging
+              - compromised_accounts
+              - breached_servers
+              - intelligence_reports
+          example: compromised_accounts
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                filters:
+                  type: object
+                  description: Search filters
+                  properties:
+                    start_date:
+                      type: string
+                      description: Start date for the search range.
+                      example: "01/12/2020"
+                    end_date:
+                      type: string
+                      example: "30/12/2020"
+                    sources:
+                      type: array
+                      items:
+                        type: string
+                      example: ["Genesis"]
+                    services:
+                      type: array
+                      items:
+                        type: string
+                      example: ["verified.domain.com"]
+                  additionalProperties: false
+
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              examples:
+                data:
+                  summary: Standard responses
+                  value:
+                    results: []
+                    total: 300
+                    filters: {}
+                    scroll_id: abcdef123
+                domain_search:
+                  summary: Search by domain
+                  value:
+                    total: 2
+                    results: [...]
+        "429":
+          description: Rate limit exceeded
+
+  /next:
+    get:
+      tags: [Query API]
+      summary: Search Pagination
+      parameters:
+        - name: scrollId
+          in: query
+          required: true
+          schema: { type: string }
+          example: abcdef123
+      responses:
+        "200":
+          description: Pagination results
+          content:
+            application/json:
+              example:
+                data:
+                  results: []
+        "500":
+          description: Fail to get next page
+
+  /get/{type}/{id}:
+    get:
+      tags: [Query API]
+      summary: Get Data
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - hacking_discussions
+              - instant_messaging
+              - breached_servers
+              - intelligence_reports
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: extract_entities
+          in: query
+          schema:
+            type: boolean
+          example: false
+      responses:
+        "200":
+          description: Full data object
+          content:
+            application/json:
+              example:
+                data:
+                  id: "123"
+        "404":
+          description: Not found
+
+  /subscriptions:
+    get:
+      tags: [Saved Queries API]
+      summary: List Saved Queries
+      responses:
+        "200":
+          description: List of saved queries
+          content:
+            application/json:
+              example:
+                - id: abc123
+                  title: Test Query
+                  search_text: test.com
+                  new_results: 0
+
+  /subscriptions/{id}:
+    get:
+      tags: [Saved Queries API]
+      summary: Get Saved Query Results
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: new
+          in: query
+          schema: { type: boolean }
+          example: false
+      responses:
+        "200":
+          description: Saved query results
+          content:
+            application/json:
+              example:
+                data:
+                  results: []
+                  scroll_id: abcdef
+
+  /license:
+    get:
+      tags: [User License API]
+      summary: Get User License
+      responses:
+        "200":
+          description: License details
+          content:
+            application/json:
+              example:
+                search_tokens_left: 120
+                refill_date: 1700000000
+                min_date_limit: 1600000000
