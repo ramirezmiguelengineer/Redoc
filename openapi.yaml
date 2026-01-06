@@ -1,39 +1,144 @@
 openapi: 3.0.3
 
 info:
-  title: Investigate API
+  title: KELA - Investigate API
   version: "1.0"
+  license: 
+    name: KELA
+    url: https://docs.ke-la.com/kela-docs/
   description: |
-    Interactive documentation for the Investigate module API.
-
-    • Rate limit: 1 request per second  
-    • Max query length: 2000 characters  
-    • Authentication via apiToken (query parameter)
+    The Investigate module RESTful API is designed to allow quick, flexible and easy searches against KELA’s data lakes in real time. It’s comprised of several GET and POST endpoints allowing for different operations, all returning JSON output.
 
 servers:
   - url: https://platform.ke-la.com/api/investigate/v1
 
 components:
   securitySchemes:
-    ApiTokenAuth:
+    ApiKeyAuth:
       type: apiKey
       in: query
       name: apiToken
+      description: "Enter your KELA API Token here."
 
 security:
-  - ApiTokenAuth: []
+  - ApiKeyAuth: []
 
 tags:
+
+  - name: "🌐 Connectivity"
+    description: |
+      The Investigate module API interface is accessible via the following address:
+      ```http
+      https://platform.ke-la.com/api/investigate
+      ```
+
+  - name: "🛠 Considerations"
+    description: |
+      To ensure optimal performance, please adhere to the following technical limits:
+
+      | Feature | Specification |
+      | :--- | :--- |
+      | **Rate Limit** | 1 request per second |
+      | **Max Query Length** | 2000 characters |
+      | **Auth Method** | `apiToken` (Query Parameter) |
+
+  - name: "🚀 Before You Start"
+    description: |
+      An API Token is required in order to use the Queries API.
+      The API token can be generated through the KELA platform UI, within the system menu.
+      <p align="center">
+        <img src="https://docs.ke-la.com/api-documentation/~gitbook/image?url=https%3A%2F%2F859333317-files.gitbook.io%2F%7E%2Ffiles%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FO5SB0YyAgvzG9M9dPZV7%252Fuploads%252FTJQdvVEtCgNG3eiheNUo%252Fimage.png%3Falt%3Dmedia%26token%3D4ced3c4f-6096-4223-b7c1-1105225774cd&width=768&dpr=4&quality=100&sign=4f15921b&sv=2" >
+      </p>
+
+  - name: "🔑 Authentication"
+    description: |
+      After acquiring this token, it should be used as a **URL parameter** – appending `apiToken=...` to each API request.
+
+      > ⚠️ **Important:** Ensure the token is included in every request to avoid `401 Unauthorized` errors.
+
+  - name: "📝 Query Logic"
+    description: |
+      Note that each query type (e.g., Free Text, Domain, etc.) has been designed to provide the best possible match to the search term. 
+      
+      * **Default behavior:** The search engine uses **“Free text”** as the default query type.
+
+      An Investigate query, which can be sent to the [Data Counters](#operation/counters) or [Data Search](#operation/search) endpoints, is comprised of three parameters:
+
+      **1. The Query:** The actual text strings to search. It can include Boolean logic, search operators, and metadata field searches.
+
+      | Query | Query Type | Meaning |
+      | :--- | :--- | :--- |
+      | `“cve-2019-0708”` | Free Text | Search for all data containing the string exactly |
+      | `“Sharon Opportunities” AND (scampage OR phishing)` | Free Text | Search for data containing the first string AND one of the others |
+      | `author.name: GandCrab` | Free Text | Search for data written by users with the handle GandCrab |
+      | `sharonopportunities.com` | Domain | Search for the domain name or its subdomains |
+      | `sharon@sharon-opp.com` | Email | Search for the exact email address |
+      | `23.0.0.1/24` | Subnet | Search for an IPv4 address within the CIDR range |
+      | `“23.0.0.1/24”` | Free Text | Search for the exact string "23.0.0.1/24" |
+      | `458021` | Credit Card | Search for credit cards issued with the 458021 BIN |
+
+      **2. The Query Type / Descriptor:** If searching for a structured entity (domain, subnet, etc.), setting the correct type ensures more accurate results.
+
+      **3. Data Type:** Specifies the data lake in which to search.
+
+      | Data Type | Details |
+      | :--- | :--- |
+      | **Hacking Discussions** | Raw data from hacking forums, illicit markets, and Dark Net communities |
+      | **Leaked Credentials** | Third-party breaches and compromised databases |
+      | **Compromised Accounts** | Data from machines infected by banking botnets |
+      | **Instant Messaging** | Raw data from Telegram and Discord |
+      | **Breached Servers** | Data from Remote Access Markets (cracked/breached servers) |
+      | **Finished Intelligence** | Reports and insights from KELA's Threat Research team |
+
+      > 💡 **Notice:** For full specification and examples of query types, please refer to the *Investigate Searches* chapter in the module user guide.
   - name: Query API
+    description: |
+      Performing a query is done via simple GET and POST requests, made to one of four endpoints:
+
+      [**Data Counters:**](#operation/counters) submit a general query against KELA’s data lake and receive an object specifying how many hits exist for each data type supported by the Investigate module (i.e. hacking discussions, leaked credentials, etc.).
+      
+      [**Data Search:**](#operation/search) submit a query against a pre-defined data type and receive a list of hits against your query. For some data types, the list will include all the details needed; others may require querying specific query IDs against the **Get Data** endpoint. This endpoint returns different types of objects based on the data type queried. 
+      > **Notice:** querying this endpoint costs **1 search token**.
+      
+      [**Search Pagination:**](#operation/next) dedicated pagination endpoint, allowing you to continuously paginate through a data set obtained by the "Data Search" endpoint. 
+      > **Notice:** for every 100 pagination requests, a search token will be consumed from your account.
+      
+      [**Get Data:**](#operation/getdata) submit an ID of a specific data point returned by the "Data Search" endpoint to get the full content of the data. This endpoint is only required for data types that may contain big texts or attached files and thus can’t be pulled in bulk via the "Data Search" endpoint.
+      
+      ---
+      **Workflow Overview**
+      Following is a general diagram showing how the three prominent endpoints can be used as part of a complete workflow. However, each endpoint can be queried independently – there’s no necessity to go by the flow depicted below.
+      <p align="center">
+        <img src="https://docs.ke-la.com/api-documentation/~gitbook/image?url=https%3A%2F%2F859333317-files.gitbook.io%2F%7E%2Ffiles%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FO5SB0YyAgvzG9M9dPZV7%252Fuploads%252FvdKdsNgiqtlUeprLeEjo%252FAPI%2520workflow.png%3Falt%3Dmedia%26token%3Dba13d11b-ad99-49f6-866b-fb1de749233f&width=768&dpr=1&quality=100&sign=38ae0de&sv=2" >
+      </p>
   - name: Saved Queries API
+    description: |
+      ### **Overview**
+
+      Saved Queries are instances that allow you to both revisit saved searches whenever relevant, as well as get email notifications for new results. 
+
+      > Notice: for more details please refer to the Saved Queries page in the Investigate module user guide.
+
+      Investigate’s API allows you to fetch information about your in-use saved queries, as well as the data from a specific saved query (either all results or new ones since your last visit).
   - name: User License API
+    description: |
+      The **"User License"** API features a single endpoint that allows you to fetch your license details. 
+
+      This operation may be useful in order to regulate searches – for example, decide whether or not to carry out multiple pagination requests that will consume many search tokens if your current token allotment is low.
 
 paths:
 
   /counters:
     post:
+      operationId: counters
       tags: [Query API]
       summary: Data Counters
+      description: |
+        The **"Data Counters"** endpoint returns a list of the data types that in which hits for the executed query were found, with the amount of hits per data type. It does not return the actual data, and as such its output may be used in order to build queries for the **"Data Search"** endpoint.
+        <div style="background-color: #f9f9f9; border: 1px solid #e5e5e5; padding: 12px; border-radius: 4px; font-family: 'Source Code Pro', monospace; font-size: 0.9em; margin: 15px 0;">
+          <span style="color: #248fb2; font-weight: bold; margin-right: 10px;">POST</span> 
+          <a href="https://platform.ke-la.com/api/investigate/v1/counters" style="color: #333; text-decoration: none; border-bottom: 1px dotted #248fb2;">https://platform.ke-la.com/api/investigate/v1/counters</a>
+        </div>
       parameters:
         - name: query
           in: query
@@ -42,10 +147,46 @@ paths:
           example: ke-la.com
         - name: entity
           in: query
+          required: true
+          description: | 
+              \
+              Define the entity type to optimize search accuracy.
           schema:
             type: string
-            enum: [text, domains, emails, subnets, credit_cards]
-          example: domains
+            default: "text"
+            enum: 
+              - text
+              - domains
+              - emails
+              - subnets
+              - credit_cards
+      requestBody:
+        required: false 
+        content: 
+          application/json:
+            schema: 
+              type: object
+              properties:
+                filters:
+                  type: object
+                  properties:
+                    start_date:
+                      type: string
+                      format: date
+                    end_date:
+                      type: string
+                      format: date
+            examples: 
+              no_filters:
+                summary: No filters
+                value: {}
+              date_filter:
+                summary: Date range filter
+                value:
+                  filters:
+                    start_date: "01/12/2020"
+                    end_date: "30/12/2020"
+        
       responses:
         "200":
           description: Counters per data type
@@ -55,13 +196,22 @@ paths:
                 data:
                   - name: hacking_discussions
                     counter: 1058
-                  - name: instant_messaging
+                  - name: leaked_credentials
                     counter: 38853
+                  - name: instant_messaging
+                    counter: 1650
+                  - name: compromised_accounts
+                    counter: 526
+                  - name: breached_servers
+                    counter: 1250
+                  - name: intelligence_reports
+                    counter: 755
         "429":
           description: Rate limit exceeded
 
   /search:
     post:
+      operationId: search
       tags: [Query API]
       summary: Data Search
       description: |
@@ -162,6 +312,7 @@ paths:
 
   /next:
     get:
+      operationId: next
       tags: [Query API]
       summary: Search Pagination
       parameters:
@@ -183,6 +334,7 @@ paths:
 
   /get/{type}/{id}:
     get:
+      operationId: getdata
       tags: [Query API]
       summary: Get Data
       parameters:
@@ -218,6 +370,7 @@ paths:
 
   /subscriptions:
     get:
+      operationId: subscriptions
       tags: [Saved Queries API]
       summary: List Saved Queries
       responses:
@@ -233,6 +386,7 @@ paths:
 
   /subscriptions/{id}:
     get:
+      operationId: getsubscription
       tags: [Saved Queries API]
       summary: Get Saved Query Results
       parameters:
@@ -256,6 +410,7 @@ paths:
 
   /license:
     get:
+      operationId: license
       tags: [User License API]
       summary: Get User License
       responses:
