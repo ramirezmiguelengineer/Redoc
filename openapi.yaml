@@ -11,28 +11,21 @@ info:
 
 servers:
   - url: https://platform.ke-la.com/api/investigate/v1
-
-components:
-  securitySchemes:
-    ApiKeyAuth:
-      type: apiKey
-      in: query
-      name: apiToken
-      description: "Enter your KELA API Token here."
+    description: Production environment
 
 security:
   - ApiKeyAuth: []
 
 tags:
 
-  - name: "🌐 Connectivity"
+  - name: "Connectivity"
     description: |
       The Investigate module API interface is accessible via the following address:
       ```http
-      https://platform.ke-la.com/api/investigate
+      https://platform.ke-la.com/api/investigate/v1
       ```
 
-  - name: "🛠 Considerations"
+  - name: "Considerations"
     description: |
       To ensure optimal performance, please adhere to the following technical limits:
 
@@ -42,7 +35,7 @@ tags:
       | **Max Query Length** | 2000 characters |
       | **Auth Method** | `apiToken` (Query Parameter) |
 
-  - name: "🚀 Before You Start"
+  - name: "Before You Start"
     description: |
       An API Token is required in order to use the Queries API.
       The API token can be generated through the KELA platform UI, within the system menu.
@@ -50,13 +43,13 @@ tags:
         <img src="https://docs.ke-la.com/api-documentation/~gitbook/image?url=https%3A%2F%2F859333317-files.gitbook.io%2F%7E%2Ffiles%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FO5SB0YyAgvzG9M9dPZV7%252Fuploads%252FTJQdvVEtCgNG3eiheNUo%252Fimage.png%3Falt%3Dmedia%26token%3D4ced3c4f-6096-4223-b7c1-1105225774cd&width=768&dpr=4&quality=100&sign=4f15921b&sv=2" >
       </p>
 
-  - name: "🔑 Authentication"
+  - name: "Authentication"
     description: |
       After acquiring this token, it should be used as a **URL parameter** – appending `apiToken=...` to each API request.
 
       > ⚠️ **Important:** Ensure the token is included in every request to avoid `401 Unauthorized` errors.
 
-  - name: "📝 Query Logic"
+  - name: "Query Logic"
     description: |
       Note that each query type (e.g., Free Text, Domain, etc.) has been designed to provide the best possible match to the search term. 
       
@@ -126,6 +119,393 @@ tags:
 
       This operation may be useful in order to regulate searches – for example, decide whether or not to carry out multiple pagination requests that will consume many search tokens if your current token allotment is low.
 
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: query
+      name: apiToken
+      description: "Enter your KELA API Token here."
+  schemas:
+    DataSearchResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties: 
+            results:
+              type: array
+              items: 
+                oneOf: 
+                  - $ref: "#/components/schemas/ResultDS-HD"
+                  - $ref: "#/components/schemas/ResultDS-LC"
+                  - $ref: "#/components/schemas/ResultDS-IM"
+                  - $ref: "#/components/schemas/ResultDS-CA"
+                  - $ref: "#/components/schemas/ResultDS-BS"
+                  - $ref: "#/components/schemas/ResultDS-IR"
+            total:
+              type: object
+              properties: 
+                value:
+                  type: integer
+                  description: Amount of results.
+                relation:
+                  type: string
+                  description: "Type of results"
+            filters:
+              type: object
+              properties:
+                authors:
+                  type: array
+                  items: 
+                    type: object
+                    properties: 
+                      key:
+                        type: string
+                      doc_count:
+                        type: integer
+                crawlers:
+                  type: array
+                  items: 
+                    type: object
+                    properties: 
+                      key:
+                        type: string
+                      crawler_count:
+                        type: integer
+                      doc_count:
+                        type: integer
+                crawlerTypes:
+                  type: array
+                  items: 
+                    type: object
+                    properties: 
+                      key:
+                        type: string
+                      crawler_count:
+                        type: integer
+                      doc_count:
+                        type: integer
+                geographies:
+                  type: array
+                  items: 
+                    type: object
+                    properties: 
+                      key:
+                        type: string
+                      crawler_count:
+                        type: integer
+                      doc_count:
+                        type: integer
+            scroll_id:
+              type: string
+              description: "ID"
+    ResultDS-HD:
+      type: object
+      properties:
+        crawler:
+          type: string
+          example: Pastebin
+        author:
+          type: object
+          properties:
+            uid:
+              type: string
+              nullable: true
+            name:
+              type: string
+            url:
+              type: string
+              format: uri
+        media:
+          type: object
+          description: Información de medios asociados (puede estar vacío)
+        id:
+          type: string
+        title:
+          type: string
+        url:
+          type: string
+          format: uri
+        posted_date:
+          type: integer
+          description: Timestamp UNIX
+        text:
+          type: string
+        index:
+          type: string
+        mediaCount:
+          type: integer
+        mediaArray:
+          type: array
+          description: ""
+    ResultDS-LC:
+      type: object
+      properties:
+        email:
+          type: string
+        domain:
+          type: string
+        passwordType:
+          type: string
+        password:
+          type: string
+        sourceType:
+          type: string
+        source:
+          type: string
+        source_id:
+          type: string
+        postedDate:
+          type: string
+        service:
+          type: string
+        userName:
+          type: string
+        serviceRaw:
+          type: string
+        sourceTypeRaw:
+          type: string
+    ResultDS-IM:
+      type: object
+      properties:
+        is_event:
+          type: boolean
+        posted_date:
+          type: integer
+          description: Timestamp UNIX
+        user_name:
+          type: string
+        id:
+          type: string
+        crawler:
+          type: string
+          example: CardingStyleTG
+        type:
+          type: string
+          example: chatTypeSupergroup
+        chat_id:
+          type: integer
+          format: int64
+        full_name:
+          type: string
+        source:
+          type: string
+        message_id:
+          type: integer
+          format: int64
+        user_id:
+          type: string
+        author_uid:
+          type: string
+        index:
+          type: string
+          example: instant_messaging
+        title:
+          type: string
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/TelegramMessage'
+    TelegramMessage:
+      type: object
+      properties:
+        text:
+          type: string
+
+        user_name:
+          type: string
+
+        order:
+          type: integer
+
+        posted_date:
+          type: integer
+
+        hasFile:
+          type: boolean
+          nullable: true
+
+        hasText:
+          type: boolean
+          nullable: true
+
+        highlight_image:
+          type: boolean
+          nullable: true
+    ResultDS-CA:
+      type: object
+      properties:
+        bot_guid:
+          type: string
+          description: Identificador único del bot
+        id:
+          type: string
+        service:
+          type: string
+          format: uri
+        update_date:
+          type: integer
+          description: Timestamp UNIX de última actualización
+        source:
+          type: string
+          example: Agressor
+        source_type:
+          type: string
+          example: indexer.bot_markets
+        source_type_description:
+          type: string
+          example: Bot Markets
+        bot_installation_date:
+          type: integer
+          nullable: true
+          description: Timestamp UNIX de instalación del bot
+        module:
+          type: string
+          example: Smoke
+        userName:
+          type: string
+        password:
+          type: string
+          description: Credencial obtenida por el bot
+    ResultDS-BS:
+      type: object
+      properties:
+        access_type:
+          type: string
+          example: CMS Admin Access
+        index:
+          type: string
+          example: breached_servers
+        title:
+          type: string
+          example: fifocolombia.com.co
+        subTitle:
+          type: string
+          example: " · CMS Admin Access"
+        seller:
+          type: string
+        price:
+          type: number
+          example: 5
+        id:
+          type: string
+        text:
+          type: string
+          description: Descripción completa del acceso ofrecido
+        cms:
+          type: string
+          example: Wordpress
+        technology:
+          type: string
+          example: Unknown
+        tool:
+          type: string
+        website_title:
+          type: string
+        first_checked:
+          type: integer
+          nullable: true
+          description: Timestamp UNIX del primer chequeo
+    ResultDS-IR:
+      type: object
+      properties:
+        summary:
+          type: string
+          description: Resumen ejecutivo del informe
+        is_highlight:
+          type: boolean
+        data_file:
+          $ref: '#/components/schemas/ReportFile'
+        iocs:
+          type: array
+          items: {}
+        image_files:
+          type: array
+          items: {}
+        published:
+          type: boolean
+        title:
+          type: string
+        type:
+          type: string
+          example: intelligence_reports
+        threat_actor_names:
+          type: array
+          items:
+            type: string
+        external_sources:
+          type: array
+          items:
+            type: string
+        is_deleted:
+          type: boolean
+        associated_threat_actors:
+          type: array
+          items:
+            type: string
+        tlp:
+          type: integer
+          description: Traffic Light Protocol level
+        threat_actor_type:
+          type: array
+          items:
+            type: string
+        mitre:
+          type: array
+          items:
+            type: string
+        id:
+          type: string
+        sector:
+          type: string
+          nullable: true
+        posted_date:
+          type: integer
+          description: Timestamp UNIX de publicación
+        indexed_date:
+          type: integer
+          description: Timestamp UNIX de indexación
+        document_type:
+          type: string
+          example: report
+        references:
+          type: array
+          items:
+            type: string
+        isDeleted:
+          type: boolean
+        authorized:
+          type: boolean
+        reportType:
+          type: string
+          example: Emerging Threats
+        text:
+          type: string
+        index:
+          type: string
+          example: intelligence_reports
+        pdf:
+          type: string
+          format: uri
+    ReportFile:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          example: pdf
+        key:
+          type: string
+          description: Ruta interna del archivo
+
+
+
+
+
+
+
 paths:
 
   /counters:
@@ -173,9 +553,11 @@ paths:
                     start_date:
                       type: string
                       format: date
+                      description: Start date for the search range using DD/MM/YYYY format.
                     end_date:
                       type: string
                       format: date
+                      description: End date for the search range using DD/MM/YYYY format.
             examples: 
               no_filters:
                 summary: No filters
@@ -206,8 +588,24 @@ paths:
                     counter: 1250
                   - name: intelligence_reports
                     counter: 755
+        "400":
+          description: Bad Request
+          content: 
+            application/json:
+              example:
+                - message: entity must be one of ["text","subnets","emails","domains","credit_cards"]
+        "401":
+          description: Unauthorized
+          content: 
+            application/json:
+              example:
+                - message: You are not authorized.
         "429":
           description: Rate limit exceeded
+          content: 
+            application/json:
+              example:
+                - message: Too Many Requests.
 
   /search:
     post:
@@ -217,9 +615,10 @@ paths:
       description: |
         **Endpoint URL**
 
-        ```
-        POST https://platform.ke-la.com/api/investigate/v1/search?apiToken=YOUR_API_TOKEN
-        ```
+        <div style="background-color: #f9f9f9; border: 1px solid #e5e5e5; padding: 12px; border-radius: 4px; font-family: 'Source Code Pro', monospace; font-size: 0.9em; margin: 15px 0;">
+          <span style="color: #248fb2; font-weight: bold; margin-right: 10px;">POST</span> 
+          <a href="https://platform.ke-la.com/api/investigate/v1/search" style="color: #333; text-decoration: none; border-bottom: 1px dotted #248fb2;">https://platform.ke-la.com/api/investigate/v1/search</a>
+        </div>
 
         This endpoint performs a full-text search across the selected index.
 
@@ -242,6 +641,7 @@ paths:
           example: ke-la.com
         - name: entity
           in: query
+          required: true
           schema:
             type: string
             enum: [text, domains, emails, subnets, credit_cards]
@@ -272,43 +672,137 @@ paths:
                   properties:
                     start_date:
                       type: string
-                      description: Start date for the search range.
+                      description: Start date for the search range using DD/MM/YYYY format.
                       example: "01/12/2020"
                     end_date:
                       type: string
+                      description: End date for the search range using DD/MM/YYYY format.
                       example: "30/12/2020"
                     sources:
                       type: array
+                      description: Name of the KELA source from which you want to obtain results.
                       items:
                         type: string
                       example: ["Genesis"]
                     services:
                       type: array
+                      description: URL or IP address of the affected service for which you want to obtain results
                       items:
                         type: string
                       example: ["verified.domain.com"]
                   additionalProperties: false
-
+              
       responses:
         "200":
           description: Search results
           content:
             application/json:
+              schema: 
+                $ref: "#/components/schemas/DataSearchResponse"
               examples:
-                data:
-                  summary: Standard responses
+                Hacking-Discussions-Response:
+                  summary: Hacking Discussions Response
+                  value: 
+                    data:
+                      results:
+                        - crawler: Pastebin
+                          author:
+                            uid: null
+                            name: josamex
+                            url: https://pastebin.comu/josamex
+                          media: {}
+                          id: "368900410"
+                          title: Untitled
+                          url: https://pastebin.com/d7CFVnf2
+                          posted_date: 1768354629
+                          text: |
+                            ...Duración: 10 días
+
+                            Inversión: Cotización personalizada
+
+                            Objetivo:
+
+                            Certificamos a TU instructor in-house...
+                          index: hacking_discussions
+                          mediaCount: 1
+                          mediaArray: []
+                      total:
+                        value: 39086
+                        relation: "eq"
+                      filters:
+                        authors:
+                          - key: "bigv"
+                            doc_count: 4684
+                        crawlers:
+                          - key: "Pastebin"
+                            doc_count: 30440
+                        crawlerTypes:
+                          - key: "Forum"
+                            crawler_count: 87
+                            doc_count: 2626
+                        geographies:
+                          - key: "France"
+                            crawler_count: 1
+                            doc_count: 1
+                      scroll_id: "556d1087f3c760a8c3a65625af4dc8457982ee56b97a3a4d7615b646d772af4c"
+                Instant-Messaging-Response:
+                  summary: Instant Messaging Response
                   value:
-                    results: []
-                    total: 300
-                    filters: {}
-                    scroll_id: abcdef123
-                domain_search:
-                  summary: Search by domain
-                  value:
-                    total: 2
-                    results: [...]
+                    data:
+                      results:
+                        - is_event: false
+                          posted_date: 1769106332
+                          user_name: mitekk1
+                          id: 7f7ae2b067cdc6057d668b47af71ec63
+                          crawler: CardingStyleTG
+                          type: chatTypeSupergroup
+                          chat_id: -1001992347780
+                          full_name: Mitek
+                          source: Telegram V4
+                          message_id: 372376600576
+                          user_id: "8192012445"
+                          author_uid: f70a516fd6dfc73d9143a1c638310f31
+                          index: instant_messaging
+                          title: 𝓒𝓪𝓻𝓭𝓲𝓷𝓰 𝓢𝓽𝔂𝓵𝓮
+                          messages:
+                            - text: |
+                                💲 TEMARIO ENERO 2026 💲
+                                Duración estimada: 1 a 2 semanas
+                              user_name: the_carding_killer
+                              order: 0
+                              posted_date: 1769106261
+
+                            - text: "...💲2️⃣5️⃣mxn"
+                              user_name: mitekk1
+                              order: 1
+                              posted_date: 1769106332
+                              hasFile: false
+                              hasText: true
+                              highlight_image: false
+
+                            - text: TELEGRAM PREMIUM 🌟
+                              user_name: Ruso
+                              order: 2
+                              posted_date: 1769106334
+
+        "400":
+          description: Bad Request
+          content: 
+            application/json:
+              example:
+                - message: entity must be one of ["text","subnets","emails","domains","credit_cards"]
+        "401":
+          description: Unauthorized
+          content: 
+            application/json:
+              example:
+                - message: You are not authorized.
         "429":
           description: Rate limit exceeded
+          content: 
+            application/json:
+              example:
+                - message: Too Many Requests.
 
   /next:
     get:
